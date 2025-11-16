@@ -1,9 +1,11 @@
 package com.spring.ai.mcpclient.resources.controller;
 
+import com.spring.ai.mcpclient.resources.service.ResourceService;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import jakarta.annotation.PostConstruct;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,13 +18,14 @@ public class BasicController {
 
     private final ChatClient chatClient;
 
-    private List<McpSyncClient> mcpSyncClients;
+    private final List<McpSyncClient> mcpSyncClients;
 
-    private String textContent;
+    @Autowired
+    ResourceService resourceService;
 
     @PostConstruct
     public void init() {
-        populateTextContent();
+        resourceService.populateTextContent();
     }
 
     public BasicController(ChatClient.Builder chatClientBuilder, List<McpSyncClient> mcpSyncClients) {
@@ -59,31 +62,15 @@ public class BasicController {
 
     @GetMapping("/chat")
     public String chat(@RequestParam String query) {
-        if (mcpSyncClients.isEmpty()) {
-            return "No MCP clients available";
-        }
+
         return chatClient.prompt()
                 .user(u -> u
                             .text("Based on this file content: {content}\n\nAnswer this question: {question}")
-                            .param("content", textContent)
+                            .param("content", this.resourceService.getTextContent())
                             .param("question", query)
                 )
                 .call()
                 .content();
-    }
-
-    private void populateTextContent() {
-
-        McpSyncClient client = mcpSyncClients.getFirst();
-        McpSchema.ListResourcesResult resourcesList = client.listResources();
-        McpSchema.Resource resource = resourcesList.resources().getFirst();
-        McpSchema.ReadResourceResult result = client.readResource(new McpSchema.ReadResourceRequest(resource.uri()));
-
-        textContent = result.contents().stream()
-                .filter(c -> c instanceof McpSchema.TextResourceContents)
-                .map(c -> ((McpSchema.TextResourceContents) c).text())
-                .findFirst()
-                .orElse("");
     }
 
 }
