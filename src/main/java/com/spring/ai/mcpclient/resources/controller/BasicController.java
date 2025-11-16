@@ -46,7 +46,7 @@ public class BasicController {
                             "uri", r.uri(),
                             "description", r.description() != null ? r.description() : ""
                     ))
-                    .collect(Collectors.toList());
+                    .toList();
 
             return Map.of(
                     "total", documents.size(),
