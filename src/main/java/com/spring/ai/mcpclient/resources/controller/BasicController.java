@@ -21,7 +21,7 @@ public class BasicController {
     private final List<McpSyncClient> mcpSyncClients;
 
     @Autowired
-    ResourceService resourceService;
+    private ResourceService resourceService;
 
     @PostConstruct
     public void init() {
